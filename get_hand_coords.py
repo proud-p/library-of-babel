@@ -1,5 +1,4 @@
 import requests
-import cv2
 import numpy as np
 
 #get hand coordinates from video stream header server
@@ -23,11 +22,6 @@ for chunk in response.iter_content(chunk_size=4096):
 
         # Decode image
         img_array = np.frombuffer(buffer, np.uint8)
-        frame = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
 
-        # Show video
-        print(xyz_json)
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
 
 cv2.destroyAllWindows()
