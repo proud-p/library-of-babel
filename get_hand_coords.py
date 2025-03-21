@@ -1,5 +1,7 @@
 import requests
 import numpy as np
+import json
+
 
 def get_coord():
 
@@ -22,10 +24,27 @@ def get_coord():
                 xyz_json = xyz_data.decode("utf-8")
                 print("Landmark 9 XYZ:", xyz_json)
                 
-                return xyz_json
+
+                try:
+                    data = json.loads(xyz_json)
+                    x = data["x"]
+                    y = data["y"]
+                    z = data["z"]
+                except TypeError:
+                    print("Error decoding JSON:", xyz_json)
+                    x,y,z =0.0,0.0,0.0
+                
+                if x == None:
+                    x = 0.0
+                if y == None:
+                    y = 0.0
+                if z == None:
+                    z = 0.0
+                            
+                return x,y,z
             
 if __name__ == "__main__":
     while True:
-        get_coord()
+        x,y,z = get_coord()
 
 

@@ -25,7 +25,7 @@ generator = pipeline(
 )
 
 # 🔹 Generate an initial GPT-2 response
-prompt = "The meaning of life is"
+prompt = "The meaning of life is" #TODO this should be an input, read from website?
 output = generator(prompt, max_length=50, num_return_sequences=2)
 generated_text_1 = output[0]["generated_text"]
 generated_text_2 = output[1]["generated_text"]
@@ -59,7 +59,7 @@ def get_answer(v0, v1,num_steps=10, coord_x=0, coord_y=0):
         # return min(t,1-t)
         return np.exp(-((t - 0.5) / 0.2) ** 2) #gaussian
         
-    
+    # TODO add y in here somewhere and clean this up so it makes more snse
     # Generate two random latent vectors
     noise_x = torch.randn_like(v0).to(model.device)
     noise_y = torch.randn_like(v0).to(model.device)
@@ -85,14 +85,21 @@ num_steps = 50
 decoded_sentences = []
 while True:
     xyz_json = get_coord()
-    coord_x = json.loads(xyz_json)["x"]
+    
+    try:
+        coord_x = json.loads(xyz_json)["x"]
+    except TypeError:
+        print("Error decoding JSON:", xyz_json)
+        coord_x = 0.0
+    
     if coord_x == None:
         coord_x = 0.0
+        
     latent = get_answer(embedding1, embedding2, num_steps=num_steps, coord_x=coord_x, coord_y=0.5) 
     with torch.no_grad():
         token_logits = model.lm_head(latent)  
-        token_ids = torch.argmax(token_logits, dim=-1)
+        token_ids = torch.argmax(token_logits, dim=-1) 
         decoded_text = tokenizer.decode(token_ids, skip_special_tokens=True)
     
     decoded_sentences.append(decoded_text)
-    print(f"Coord {0}: {decoded_text}")
+    print(f"Coord {coord_x}: {decoded_text}")
