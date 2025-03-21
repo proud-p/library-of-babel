@@ -1,6 +1,9 @@
 import requests
 import numpy as np
 import json
+from pythonosc.udp_client import SimpleUDPClient
+
+osc_client = SimpleUDPClient("127.0.0.1", 1234)  # (IP, port)
 
 
 def get_coord():
@@ -40,10 +43,15 @@ def get_coord():
                     y = 0.0
                 if z == None:
                     z = 0.0
+                
+                print(f"Sending OSC: {x}, {y}, {z}")
+                osc_client.send_message("/xyz", [x, y, z])
                             
                 return x,y,z
             
 if __name__ == "__main__":
+    # OSC setup
+    
     while True:
         x,y,z = get_coord()
 
