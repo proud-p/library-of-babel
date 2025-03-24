@@ -63,8 +63,17 @@ def get_answer(v0, v1,num_steps=10, coord_x=0, coord_y=0):
         
     # TODO add y in here somewhere and clean this up so it makes more snse
     # Generate two random latent vectors
+    # noise_x = torch.randn_like(v0).to(model.device)
+    # noise_y = torch.randn_like(v0).to(model.device)
+    
+    # Combine coords into a seed (scaled for better float-to-int stability)
+    seed = int(coord_x * 1000) + int(coord_y * 1000) * 10000
+    torch.manual_seed(seed)
     noise_x = torch.randn_like(v0).to(model.device)
+
+    torch.manual_seed(seed + 1)  # Slightly different for noise_y
     noise_y = torch.randn_like(v0).to(model.device)
+
     
     v0, v1 = v0.to(model.device), v1.to(model.device)
     dot = torch.sum(v0 * v1, axis=-1) / (torch.linalg.norm(v0, axis=-1) * torch.linalg.norm(v1, axis=-1))
@@ -76,36 +85,46 @@ def get_answer(v0, v1,num_steps=10, coord_x=0, coord_y=0):
     nm = noise_mult(coord_x)
     v = ((torch.sin((1 - coord_x) * theta) / sin_theta)[:, None] * v0 + (torch.sin(coord_x * theta) / sin_theta)[:, None] * v1)+ (noise_x*nm) + (noise_y*nm)
     # Add small random noise
+    
+
 
     return torch.tensor(v, dtype=torch.float32)
 
 #alternative to noise lerp, walk in curve, might make more sense and seem less random. so if you stop at the same place you should get the same answer
 def get_curved_answer(v0, v1, coord_x=0.0, coord_y=0.0):
     """
-    Deterministic curved interpolation (like a Bézier) between v0 and v1.
-    coord_x: how far along the interpolation we are (0 to 1)
-    coord_y: how far to curve (negative = curve one side, positive = the other)
+    Curved interpolation between v0 and v1 with deterministic 'noise' variation.
+    coord_x: progress from v0 to v1 (0 to 1)
+    coord_y: controls both curve and noise strength (can be -1 to 1)
     """
     v0, v1 = v0.to(model.device), v1.to(model.device)
 
-    # Direction from v0 to v1
     direction = v1 - v0
     midpoint = (v0 + v1) / 2
 
-    # Create a stable perpendicular-ish direction using a fixed seed (based on v0 + v1)
-    torch.manual_seed(42)  # Ensures this is always the same
     fake_vec = torch.ones_like(direction)
     perp = fake_vec - (fake_vec * direction).sum(-1, keepdim=True) / (direction.norm(dim=-1, keepdim=True) ** 2 + 1e-8) * direction
     perp = torch.nn.functional.normalize(perp, dim=-1)
 
-    # Scale perpendicular offset based on coord_y
-    curve_strength = coord_y * 10.0  # Can be positive or negative
-    control_point = midpoint + curve_strength * perp  # Curve away from center line
+    curve_strength = coord_y * 5.0
+    control_point = midpoint + curve_strength * perp
 
-    # Bézier interpolation
     t = torch.tensor(coord_x).float().to(model.device)
     curved = (1 - t)**2 * v0 + 2 * (1 - t) * t * control_point + t**2 * v1
-    return curved
+
+    # Add deterministic wiggle with fade
+    frequency = 30.0
+    amplitude = 300 * coord_y
+    wiggle = torch.sin(frequency * torch.linspace(0, 1, curved.shape[0], device=curved.device)).unsqueeze(1)
+
+    # 👇 This line ensures no wiggle at start or end
+    fade = t * (1 - t) * 4  # 0 at t=0 or 1, 1 at t=0.5
+    variation = amplitude * fade * wiggle * perp
+
+    final = curved + variation
+    return final
+
+
 
 
 # Generate interpolated latents
@@ -119,8 +138,10 @@ while True:
     x,y,z = get_coord(ip)
     
         
-    # latent = get_answer(embedding1, embedding2, num_steps=num_steps, coord_x=x, coord_y=0.5) 
-    latent = get_curved_answer(embedding1, embedding2, coord_x=x, coord_y=(y - 0.5) * 2)  # remap y from [0,1] → [-1,1]
+    latent = get_answer(embedding1, embedding2, num_steps=num_steps, coord_x=x, coord_y=0.5) 
+    # latent = get_curved_answer(embedding1, embedding2, coord_x=x, coord_y=(y - 0.5) * 2)  # remap y from [0,1] → [-1,1]
+    
+    # print(f"Coord x={x:.2f}, y={coord_y:.2f} → Latent mean: {latent.mean().item():.4f}, std: {latent.std().item():.4f}")
 
 
 
