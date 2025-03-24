@@ -6,12 +6,15 @@ import torch
 import numpy as np
 from tqdm import tqdm
 from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer
-from get_hand_coords import get_coord
+from get_hand_coords import HandCoordReceiver
 import json
 
 global device
-ip = "192.168.0.2"
-print(f"Serving on ip {ip}, IS THIS RIGHT? CHECK")
+receiver = HandCoordReceiver()
+wsl_ip= "172.30.40.252"
+listening_port = 5009
+receiver.start(ip=wsl_ip, port=listening_port)  # This blocks and listens forever
+
 
 # Load GPT-2 with tokenizer
 model_name = "gpt2"
@@ -135,7 +138,7 @@ num_steps = 50
 decoded_sentences = []
 while True:
     
-    x,y,z = get_coord(ip)
+    x,y,z = receiver.get_coord()
     
         
     latent = get_answer(embedding1, embedding2, num_steps=num_steps, coord_x=x, coord_y=0.5) 

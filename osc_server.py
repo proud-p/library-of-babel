@@ -1,3 +1,5 @@
+#same as hand coord script
+
 from pythonosc import dispatcher, osc_server
 
 class HandCoordReceiver:
