@@ -111,7 +111,8 @@ while True:
     
         
     # latent = get_answer(embedding1, embedding2, num_steps=num_steps, coord_x=x, coord_y=0.5) 
-    latent = get_answer(embedding1, embedding2, num_steps=num_steps, coord_x=x, coord_y=0.5)
+    latent = get_curved_answer(embedding1, embedding2, coord_x=x)
+
 
     with torch.no_grad():
         token_logits = model.lm_head(latent)  
