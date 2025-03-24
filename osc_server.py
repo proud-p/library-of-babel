@@ -20,7 +20,7 @@ class HandCoordReceiver:
             self.latest_coords["z"]
         )
 
-    def start(self, ip="0.0.0.0", port=5009):
+    def start_receiver(self, ip="0.0.0.0", port=5009):
         disp = dispatcher.Dispatcher()
         disp.map("/xyz", self.handle_xyz)
 

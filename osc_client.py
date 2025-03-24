@@ -1,36 +1,38 @@
 from pythonosc import udp_client
 from time import sleep
 
-def get_message():
-    return "Message from WSL!"
 
-
-osc_client = None  # global reference to reuse the client
-
-def init_osc(ip="127.0.0.1", port=1234):
-    global osc_client
-    osc_client = udp_client.SimpleUDPClient(ip, port)
-    print(f"OSC client initialized at {ip}:{port}")
-
-def send_osc_message():
-    """
-    Send OSC message to Unreal Engine using existing client.
-    """
-    global osc_client
-    if osc_client is None:
-        raise RuntimeError("OSC client not initialized. Call init_osc(ip, port) first.")
+class OSCSender:
+    def __init__(self, ip="127.0.0.1",port=1234):
+        global osc_client
+        osc_client = udp_client.SimpleUDPClient(ip, port)
+        print(f"OSC client to send messages initialized at {ip}:{port}")
+        
+    def send_osc_message(self, message):
+        
+        def get_message(message):
+            #TODO clean messages
+            return message
+        
+        global osc_client
+        if osc_client is None:
+            raise RuntimeError("OSC client not initialized. Call init_osc(ip, port) first.")
+        
+        message_address = "/answer"
+        value = get_message(message)  # This should return a string or number
+        osc_client.send_message(message_address, value)
+        print(f"Sent OSC message to {osc_client._address}:{osc_client._port} → {value}")
+        
     
-    message_address = "/answer"
-    value = get_message()  # This should return a string or number
-    osc_client.send_message(message_address, value)
-    print(f"Sent OSC message to {osc_client._address}:{osc_client._port} → {value}")
-
+            
+            
+            
+        
 
 if __name__ == "__main__":
     while True:
         ip = "192.168.0.2"        
         port = 1234    # Your desired port
-        init_osc("192.168.0.10", port=1234)
-        osc_client = udp_client.SimpleUDPClient(ip, port)
-        send_osc_message()
-        sleep(1)
+        Sender = OSCSender(ip, port=1234)
+        Sender.send_osc_message("message from wsl!")
+        sleep(60)

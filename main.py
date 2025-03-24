@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer
-import pythonosc
+from osc_server import HandCoordReceiver  # Reuse the clean, isolated OSC listener
 from osc_client import OSCSender
 
 # === GPT-2 Setup ===
@@ -9,9 +9,8 @@ model_name = "gpt2"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(model_name).to("cuda" if torch.cuda.is_available() else "cpu")
 
-# === Generate two base responses to interpolate between ===
-prompt = "The meaning of life is"
 generator = pipeline("text-generation", model=model, tokenizer=tokenizer, device=0 if torch.cuda.is_available() else -1)
+prompt = "The meaning of life is"
 output = generator(prompt, max_length=50, num_return_sequences=2)
 text1 = output[0]["generated_text"]
 text2 = output[1]["generated_text"]
@@ -44,7 +43,6 @@ def get_answer(v0, v1, coord_x=0.0, coord_y=0.0):
     torch.manual_seed(seed + 1)
     noise_y = torch.randn_like(v0).to(model.device)
 
-    v0, v1 = v0.to(model.device), v1.to(model.device)
     dot = torch.sum(v0 * v1, axis=-1) / (torch.linalg.norm(v0, axis=-1) * torch.linalg.norm(v1, axis=-1))
     dot = torch.clamp(dot, -1.0, 1.0)
     theta = torch.arccos(dot)
@@ -57,10 +55,11 @@ def get_answer(v0, v1, coord_x=0.0, coord_y=0.0):
 
     return torch.tensor(v, dtype=torch.float32)
 
-# === OSC Receiver Class ===
-class HandCoordReceiver:
-    def __init__(self):
-        self.latest_coords = {"x": 0.0, "y": 0.0, "z": 0.0}
+# === Custom OSC-Integrated Receiver Class ===
+class GPTFromOSC(HandCoordReceiver):
+    def __init__(self, sender_ip, sender_port):
+        super().__init__()
+        self.sender = OSCSender(ip=sender_ip, port=sender_port)
 
     def handle_xyz(self, address, *args):
         if len(args) == 3:
@@ -79,15 +78,15 @@ class HandCoordReceiver:
 
             print(f"🧠 GPT Response for x={x:.2f}, y={y:.2f}: {decoded}")
 
-    def start(self, ip="0.0.0.0", port=5009):
-        disp = pythonosc.dispatcher.Dispatcher()
-        disp.map("/xyz", self.handle_xyz)
-        server = pythonosc.osc_server.BlockingOSCUDPServer((ip, port), disp)
-        print(f"🟢 OSC server listening on {ip}:{port}")
-        server.serve_forever()
+            # Send response via OSC
+            self.sender.send_osc_message(decoded)
 
 # === Main Entry ===
 if __name__ == "__main__":
-    receiver = HandCoordReceiver()
-    wsl_ip = "0.0.0.0"  # Listen on all interfaces inside WSL
-    receiver.start(ip=wsl_ip, port=5009)
+    receiver_ip = "0.0.0.0"      # This machine (WSL)
+    receiver_port = 5009
+    sender_ip = "192.168.0.2"    # Windows machine
+    sender_port = 1234
+
+    gpt_osc = GPTFromOSC(sender_ip, sender_port)
+    gpt_osc.start_receiver(ip=receiver_ip, port=receiver_port)
