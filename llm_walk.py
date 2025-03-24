@@ -61,7 +61,7 @@ def get_answer(v0, v1,num_steps=10, coord_x=0, coord_y=0):
         # return min(t,1-t)
         return np.exp(-((t - 0.5) / 0.2) ** 2) #gaussian
         
-    # TODO add y in here somewhere and clean this up so it makes more snse
+    # TODO this can be more deterministic so it is more explainable, maybe graph it out?
     # Generate two random latent vectors
     # noise_x = torch.randn_like(v0).to(model.device)
     # noise_y = torch.randn_like(v0).to(model.device)
@@ -152,3 +152,5 @@ while True:
     
     decoded_sentences.append(decoded_text)
     print(f"Coord {x}: {decoded_text}")
+    
+    #TODO OSC so that voice can catch - only send new osc if coord changes?
