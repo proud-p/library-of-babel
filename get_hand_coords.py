@@ -45,6 +45,11 @@ def get_coord(ip,port=1234,osc_client= udp_client.SimpleUDPClient(ip, port)):
                     x = data["x"]
                     y = data["y"]
                     z = data["z"]
+                    
+                    x = np.round(x,2)
+                    y = np.round(y,2)
+                    z = np.round(z,2)
+                        
                 except TypeError:
                     print("Error decoding JSON:", xyz_json)
                     x,y,z =0.0,0.0,0.0
@@ -58,6 +63,8 @@ def get_coord(ip,port=1234,osc_client= udp_client.SimpleUDPClient(ip, port)):
                     
                 print(x,y,z)
                 
+                
+                
                 print(f"Sending OSC: {x}, {y}, {z}")
                 osc_client.send_message("/xyz", [x, y, z])
             
@@ -65,7 +72,6 @@ def get_coord(ip,port=1234,osc_client= udp_client.SimpleUDPClient(ip, port)):
                 # osc_client.send_message("/xyz", value)
                             
                 return x,y,z
-            
 if __name__ == "__main__":
     # OSC setup
     

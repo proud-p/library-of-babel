@@ -79,6 +79,7 @@ def get_answer(v0, v1,num_steps=10, coord_x=0, coord_y=0):
 
     return torch.tensor(v, dtype=torch.float32)
 
+#alternative to noise lerp, walk in curve, might make more sense and seem less random. so if you stop at the same place you should get the same answer
 def get_curved_answer(v0, v1, coord_x=0.0):
     """
     Quadratic Bézier interpolation for curved walk between v0 and v1
