@@ -56,7 +56,7 @@ num_interpolation_steps = 10  # Number of steps for circular walk
 # change num steps 
 def get_answer(v0, v1,num_steps=10, coord_x=0, coord_y=0):
     
-    def noise_mult(num_steps,t):
+    def noise_mult(t):
         # print("t",t)
         # return min(t,1-t)
         return np.exp(-((t - 0.5) / 0.2) ** 2) #gaussian
@@ -73,11 +73,30 @@ def get_answer(v0, v1,num_steps=10, coord_x=0, coord_y=0):
     sin_theta = torch.sin(theta)
 
 
-    nm = noise_mult(num_steps,coord_x)
+    nm = noise_mult(coord_x)
     v = ((torch.sin((1 - coord_x) * theta) / sin_theta)[:, None] * v0 + (torch.sin(coord_x * theta) / sin_theta)[:, None] * v1)+ (noise_x*nm) + (noise_y*nm)
     # Add small random noise
 
     return torch.tensor(v, dtype=torch.float32)
+
+def get_curved_answer(v0, v1, coord_x=0.0):
+    """
+    Quadratic Bézier interpolation for curved walk between v0 and v1
+    """
+    v0, v1 = v0.to(model.device), v1.to(model.device)
+
+    # Control point C - lifted slightly off the line between v0 and v1
+    midpoint = (v0 + v1) / 2
+    direction = v1 - v0
+    perpendicular = torch.randn_like(direction)  # Random orthogonal-ish direction
+    perpendicular = perpendicular - (perpendicular * direction).sum(-1, keepdim=True) / (direction.norm(dim=-1, keepdim=True) ** 2 + 1e-8) * direction
+    control_point = midpoint + 0.3 * perpendicular  # Curve magnitude
+
+    t = torch.tensor(coord_x).float().to(model.device)
+
+    curved = (1 - t)**2 * v0 + 2 * (1 - t) * t * control_point + t**2 * v1
+    return curved
+
 
 # Generate interpolated latents
 num_steps = 50
@@ -90,7 +109,9 @@ while True:
     x,y,z = get_coord(ip)
     
         
-    latent = get_answer(embedding1, embedding2, num_steps=num_steps, coord_x=x, coord_y=0.5) 
+    # latent = get_answer(embedding1, embedding2, num_steps=num_steps, coord_x=x, coord_y=0.5) 
+    latent = get_answer(embedding1, embedding2, num_steps=num_steps, coord_x=x, coord_y=0.5)
+
     with torch.no_grad():
         token_logits = model.lm_head(latent)  
         token_ids = torch.argmax(token_logits, dim=-1) 
