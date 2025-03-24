@@ -1,17 +1,29 @@
 import requests
 import numpy as np
 import json
-from pythonosc.udp_client import SimpleUDPClient
+from pythonosc import udp_client
 
-osc_client = SimpleUDPClient("127.0.0.1", 1234)  # (IP, port)
+ip = "192.168.0.2"    
+port = 1234    # Your desired port
+osc_client = udp_client.SimpleUDPClient(ip, port)
 
 
-def get_coord():
+def get_coord(ip,port=1234,osc_client= udp_client.SimpleUDPClient(ip, port)):
 
     #get hand coordinates from video stream header server
     # Connect to video stream over HTTP internet - so might have to change IP address day to day
-    url = "http://10.106.33.26:5000/video_feed"
+    # url = "http://10.106.33.26:5000/video_feed"
+    url = f"http://{ip}:5000/video_feed"
+    print
     response = requests.get(url, stream=True)
+    print(response)
+    
+    # if 404 break
+    if response.status_code == 404:
+        print("404!")
+        raise Exception
+        
+        
 
     buffer = b""
     for chunk in response.iter_content(chunk_size=4096):
@@ -43,9 +55,14 @@ def get_coord():
                     y = 0.0
                 if z == None:
                     z = 0.0
+                    
+                print(x,y,z)
                 
                 print(f"Sending OSC: {x}, {y}, {z}")
                 osc_client.send_message("/xyz", [x, y, z])
+            
+                value = "HI"
+                # osc_client.send_message("/xyz", value)
                             
                 return x,y,z
             
@@ -53,6 +70,6 @@ if __name__ == "__main__":
     # OSC setup
     
     while True:
-        x,y,z = get_coord()
+        x,y,z = get_coord(ip)
 
 

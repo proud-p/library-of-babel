@@ -10,6 +10,8 @@ from get_hand_coords import get_coord
 import json
 
 global device
+ip = "192.168.0.2"
+print(f"Serving on ip {ip}, IS THIS RIGHT? CHECK")
 
 # Load GPT-2 with tokenizer
 model_name = "gpt2"
@@ -84,22 +86,15 @@ num_steps = 50
 # Decode the interpolated embeddings into words
 decoded_sentences = []
 while True:
-    xyz_json = get_coord()
     
-    try:
-        coord_x = json.loads(xyz_json)["x"]
-    except TypeError:
-        print("Error decoding JSON:", xyz_json)
-        coord_x = 0.0
+    x,y,z = get_coord(ip)
     
-    if coord_x == None:
-        coord_x = 0.0
         
-    latent = get_answer(embedding1, embedding2, num_steps=num_steps, coord_x=coord_x, coord_y=0.5) 
+    latent = get_answer(embedding1, embedding2, num_steps=num_steps, coord_x=x, coord_y=0.5) 
     with torch.no_grad():
         token_logits = model.lm_head(latent)  
         token_ids = torch.argmax(token_logits, dim=-1) 
         decoded_text = tokenizer.decode(token_ids, skip_special_tokens=True)
     
     decoded_sentences.append(decoded_text)
-    print(f"Coord {coord_x}: {decoded_text}")
+    print(f"Coord {x}: {decoded_text}")
