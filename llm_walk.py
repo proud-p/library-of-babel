@@ -80,21 +80,30 @@ def get_answer(v0, v1,num_steps=10, coord_x=0, coord_y=0):
     return torch.tensor(v, dtype=torch.float32)
 
 #alternative to noise lerp, walk in curve, might make more sense and seem less random. so if you stop at the same place you should get the same answer
-def get_curved_answer(v0, v1, coord_x=0.0):
+def get_curved_answer(v0, v1, coord_x=0.0, coord_y=0.0):
     """
-    Quadratic Bézier interpolation for curved walk between v0 and v1
+    Deterministic curved interpolation (like a Bézier) between v0 and v1.
+    coord_x: how far along the interpolation we are (0 to 1)
+    coord_y: how far to curve (negative = curve one side, positive = the other)
     """
     v0, v1 = v0.to(model.device), v1.to(model.device)
 
-    # Control point C - lifted slightly off the line between v0 and v1
-    midpoint = (v0 + v1) / 2
+    # Direction from v0 to v1
     direction = v1 - v0
-    perpendicular = torch.randn_like(direction)  # Random orthogonal-ish direction
-    perpendicular = perpendicular - (perpendicular * direction).sum(-1, keepdim=True) / (direction.norm(dim=-1, keepdim=True) ** 2 + 1e-8) * direction
-    control_point = midpoint + 0.3 * perpendicular  # Curve magnitude
+    midpoint = (v0 + v1) / 2
 
+    # Create a stable perpendicular-ish direction using a fixed seed (based on v0 + v1)
+    torch.manual_seed(42)  # Ensures this is always the same
+    fake_vec = torch.ones_like(direction)
+    perp = fake_vec - (fake_vec * direction).sum(-1, keepdim=True) / (direction.norm(dim=-1, keepdim=True) ** 2 + 1e-8) * direction
+    perp = torch.nn.functional.normalize(perp, dim=-1)
+
+    # Scale perpendicular offset based on coord_y
+    curve_strength = coord_y * 10.0  # Can be positive or negative
+    control_point = midpoint + curve_strength * perp  # Curve away from center line
+
+    # Bézier interpolation
     t = torch.tensor(coord_x).float().to(model.device)
-
     curved = (1 - t)**2 * v0 + 2 * (1 - t) * t * control_point + t**2 * v1
     return curved
 
@@ -111,7 +120,8 @@ while True:
     
         
     # latent = get_answer(embedding1, embedding2, num_steps=num_steps, coord_x=x, coord_y=0.5) 
-    latent = get_curved_answer(embedding1, embedding2, coord_x=x)
+    latent = get_curved_answer(embedding1, embedding2, coord_x=x, coord_y=(y - 0.5) * 2)  # remap y from [0,1] → [-1,1]
+
 
 
     with torch.no_grad():
