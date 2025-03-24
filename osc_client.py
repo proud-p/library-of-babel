@@ -2,7 +2,7 @@ from pythonosc import udp_client
 from time import sleep
 
 def get_message():
-    return "Message from another script!"
+    return "Message from WSL!"
 
 
 osc_client = None  # global reference to reuse the client
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     while True:
         ip = "192.168.0.2"        
         port = 1234    # Your desired port
-        init_osc(ip)
+        init_osc("192.168.0.10", port=1234)
         osc_client = udp_client.SimpleUDPClient(ip, port)
         send_osc_message()
         sleep(1)

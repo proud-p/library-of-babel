@@ -1,21 +1,19 @@
-import argparse
-import math
-from pythonosc.dispatcher import Dispatcher
-from pythonosc import osc_server
+from pythonosc import dispatcher, osc_server
 
-# Custom handler to print /xyz messages
-def print_xyz_handler(address, *args):
-    print(f"Received OSC on {address}:", args)
+def handle_answer(address, *args):
+    print(f" Received on {address}: {args}")
+
+def start_osc_receiver(ip="0.0.0.0", port=1234):
+    disp = dispatcher.Dispatcher()
+    disp.map("/xyz", handle_answer)  # Listen for messages sent to /answer
+
+    server = osc_server.ThreadingOSCUDPServer((ip, port), disp)
+    print(f"✅ OSC server listening on {ip}:{port} (Ctrl+C to stop)")
+    server.serve_forever()
+
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--ip", default="127.0.0.1", help="The IP to listen on")
-    parser.add_argument("--port", type=int, default=1234, help="The port to listen on")
-    args = parser.parse_args()
-
-    dispatcher = Dispatcher()
-    dispatcher.map("/xyz", print_xyz_handler)  # Map our OSC path to the handler
-
-    server = osc_server.ThreadingOSCUDPServer((args.ip, args.port), dispatcher)
-    print("✅ Listening for OSC on {}:{}".format(args.ip, args.port))
-    server.serve_forever()
+    ip = "172.30.40.252"        
+    port = 5009    # Your desired port
+    
+    start_osc_receiver(ip,port)
