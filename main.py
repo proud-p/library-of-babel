@@ -81,8 +81,8 @@ class GPTFromOSC(HandCoordReceiver):
 
     def handle_xyz(self, address, *args):
         if len(args) == 3:
-            self.latest_coords["x"] = abs(round(args[0], 1))
-            self.latest_coords["y"] = abs(round(args[1], 1))
+            self.latest_coords["x"] = abs(round(args[0], 2))
+            self.latest_coords["y"] = abs(round(args[1], 2))
             self.latest_coords["z"] = 0.0
             print(f"\n📥 Received /xyz: x={self.latest_coords['x']}, y={self.latest_coords['y']}")
             self.generate_and_send_response()
