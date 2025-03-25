@@ -37,7 +37,8 @@ def get_answer(v0, v1, coord_x=0.0, coord_y=0.0):
     def noise_mult(t):
         return np.exp(-((t - 0.5) / 0.2) ** 2)
 
-    seed = int(coord_x * 1000) + int(coord_y * 1000) * 10000
+    # seed = int(coord_x * 1000) + int(coord_y * 1000) * 10000
+    seed = 42
     torch.manual_seed(seed)
     noise_x = torch.randn_like(v0).to(model.device)
     torch.manual_seed(seed + 1)
@@ -51,7 +52,7 @@ def get_answer(v0, v1, coord_x=0.0, coord_y=0.0):
     nm = noise_mult(coord_x)
     v = ((torch.sin((1 - coord_x) * theta) / sin_theta)[:, None] * v0 + 
          (torch.sin(coord_x * theta) / sin_theta)[:, None] * v1 + 
-         noise_x * nm + noise_y * nm)
+         noise_x * nm *coord_x + noise_y * nm *coord_y)
 
     return torch.tensor(v, dtype=torch.float32)
 
@@ -83,9 +84,10 @@ class GPTFromOSC(HandCoordReceiver):
 
 # === Main Entry ===
 if __name__ == "__main__":
-    receiver_ip = "0.0.0.0"      # This machine (WSL)
+    receiver_ip = "0.0.0.0"      # This machine (WSL) 
     receiver_port = 5009
-    sender_ip = "192.168.0.2"    # Windows machine
+    # sender_ip = "192.168.0.2"    # Windows machine -James' house
+    sender_ip = "10.106.32.181" # Windows machine
     sender_port = 1234
 
     gpt_osc = GPTFromOSC(sender_ip, sender_port)
