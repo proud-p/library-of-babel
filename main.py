@@ -64,10 +64,9 @@ class GPTFromOSC(HandCoordReceiver):
 
     def handle_xyz(self, address, *args):
         if len(args) == 3:
-            self.latest_coords["x"] = round(args[0], 1)
-            self.latest_coords["y"] = round(args[1], 1)
-            self.latest_coords["z"] = round(args[2], 1)
-
+            self.latest_coords["x"] = abs(round(args[0], 1))
+            self.latest_coords["y"] = abs(round(args[1], 1))
+            self.latest_coords["z"] = 0.0
             x, y = self.latest_coords["x"], self.latest_coords["y"]
             print(f"\n📥 Received /xyz: x={x}, y={y}")
 
@@ -80,7 +79,9 @@ class GPTFromOSC(HandCoordReceiver):
             print(f"🧠 GPT Response for x={x:.2f}, y={y:.2f}: {decoded}")
 
             # Send response via OSC
-            self.sender.send_osc_message(decoded)
+            self.sender.send_osc_message(decoded, "/answer")
+            self.sender.send_osc_message(x, "/x")
+            self.sender.send_osc_message(y, "/y")
 
 # === Main Entry ===
 if __name__ == "__main__":

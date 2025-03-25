@@ -8,7 +8,7 @@ class OSCSender:
         osc_client = udp_client.SimpleUDPClient(ip, port)
         print(f"OSC client to send messages initialized at {ip}:{port}")
         
-    def send_osc_message(self, message):
+    def send_osc_message(self, message, message_address = "/answer"):
         
         def get_message(message):
             #TODO clean messages
@@ -18,7 +18,7 @@ class OSCSender:
         if osc_client is None:
             raise RuntimeError("OSC client not initialized. Call init_osc(ip, port) first.")
         
-        message_address = "/answer"
+
         value = get_message(message)  # This should return a string or number
         osc_client.send_message(message_address, value)
         print(f"Sent OSC message to {osc_client._address}:{osc_client._port} → {value}")
