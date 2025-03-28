@@ -95,6 +95,8 @@ class GPTFromOSC(HandCoordReceiver):
         prompt = " ".join(map(str, args)).strip()
         print(f"🎙️ New prompt received via voice: {prompt}")
         self.prompt = prompt
+        
+        self.sender.send_osc_message(self.prompt, "/answer")
 
         # Generate two completions based on new prompt
         output = generator(prompt, max_length=50, num_return_sequences=2)
@@ -130,7 +132,8 @@ if __name__ == "__main__":
     receiver_ip = "0.0.0.0"      # This machine (WSL) 
     receiver_port = 5009
     # sender_ip = "192.168.0.2"    # Windows machine -James' house
-    sender_ip = "10.106.32.181" # Windows machine
+    # sender_ip = "10.106.32.181" # Windows machine
+    sender_ip = "192.168.0.114" #windows home
     sender_port = 1234
 
     gpt_osc = GPTFromOSC(sender_ip, sender_port)
